@@ -1,0 +1,36 @@
+<div class="login-container">
+  <div class="login-card">
+    <h1>نظام الكاشير</h1>
+    <form (ngSubmit)="login()">
+      <div class="form-group">
+        <label>اسم المستخدم</label>
+        <input 
+          type="text" 
+          [(ngModel)]="username" 
+          name="username"
+          placeholder="أدخل اسم المستخدم"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label>كلمة المرور</label>
+        <input 
+          type="password" 
+          [(ngModel)]="password" 
+          name="password"
+          placeholder="أدخل كلمة المرور"
+          required>
+      </div>
+
+      <div *ngIf="error" class="error-message">{{ error }}</div>
+
+      <button type="submit" class="login-btn">دخول</button>
+    </form>
+
+    <div class="demo-info">
+      <h3>بيانات تجريبية:</h3>
+      
+      <p><strong>كاشير:</strong> cashier1 / cashier123</p>
+    </div>
+  </div>
+</div>

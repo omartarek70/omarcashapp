@@ -1,0 +1,387 @@
+<div class="cash-container">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="title">نظام الكاشير - {{ currentUser?.name }}</div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <div style="font-size:13px; color:#fff; opacity:0.9;">مرتجعات اليوم: {{ todayReturnsTotal }} جنيه</div>
+      <button (click)="logout()" class="logout-btn">خروج</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Invoice Section -->
+    <div class="invoice-section">
+      <div class="invoice-header">
+        <h2>فاتورة جديدة</h2>
+      </div>
+
+      <div class="form-group">
+        <label>اسم العميل</label>
+        <input 
+          type="text" 
+          [(ngModel)]="customer_name" 
+          placeholder="أدخل اسم العميل"
+          name="customer_name">
+        <label>رقم هاتف العميل</label>
+        <input 
+          type="number" 
+          [(ngModel)]="customer_phone" 
+          placeholder="أدخل رقم العميل"
+          name="customer_phone">
+        <label>  عنوان العميل </label>
+        <input
+          type="email"
+          [(ngModel)]="customer_email"
+          placeholder=" عنوان العميل "
+          name="customer_email">
+        <!-- Loyalty points removed from invoice UI -->
+        <!-- Price mode selector moved here (controls which price is used when adding items) -->
+        <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+          <label>نمط السعر في الفاتورة</label>
+          <select [(ngModel)]="useWholesalePrice" (ngModelChange)="onPriceModeChange()" name="price_mode_invoice" style="width:160px;">
+            <option [ngValue]="false">سعر البيع</option>
+            <option [ngValue]="true">سعر الجملة</option>
+          </select>
+          <div style="margin-left:12px; font-size:13px; color:#444;">
+            السعر المستخدم حالياً: <strong>{{ useWholesalePrice ? 'سعر الجملة' : 'سعر البيع' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-items">
+        <h3>عناصر الفاتورة</h3>
+        <div *ngIf="invoice_items.length === 0" class="empty-message">
+          لا توجد عناصر حالياً
+        </div>
+        <table *ngIf="invoice_items.length > 0" class="items-table">
+          <tr>
+            <th>المنتج</th>
+            <th>الكمية</th>
+            <th>السعر</th>
+            <th>الإجمالي</th>
+            <th></th>
+          </tr>
+          <tr *ngFor="let item of invoice_items; let i = index">
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price }}</td>
+            <td>{{ item.line_total }}</td>
+            <td><button (click)="removeFromInvoice(i)" class="remove-btn">حذف</button></td>
+          </tr>
+        </table>
+        
+      </div>
+
+      <div class="calculations">
+        <div class="calc-row">
+          <span>الإجمالي الجزئي:</span>
+          <span>{{ subtotal }}</span>
+        </div>
+        <div class="calc-row">
+          <span>الخصم (%):</span>
+          <input type="number" [(ngModel)]="discount_percent" name="discount_percent" min="0" max="100">
+        </div>
+        <div class="calc-row">
+          <span>مبلغ الخصم:</span>
+          <span>{{ discount_amount }}</span>
+        </div>
+        <!-- الضريبة أُلغيت وفق طلب المستخدم -->
+        <div class="calc-row total">
+          <span>الإجمالي:</span>
+          <span *ngIf="!manualTotalEnabled">{{ displayedTotal }}</span>
+          <span *ngIf="manualTotalEnabled">
+            <input type="number" [(ngModel)]="manual_total" name="manual_total" style="width:120px;" />
+          </span>
+        </div>
+        <div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+          <label style="font-size:13px;"><input type="checkbox" [(ngModel)]="manualTotalEnabled" (change)="manualTotalEnabled ? manual_total = displayedTotal : manual_total = null" name="manualToggle" /> تعديل الإجمالي يدوياً</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>طريقة الدفع</label>
+        <select [(ngModel)]="payment_method" (change)="toggleInstallmentForm()" name="payment_method">
+          <option>نقدي</option>
+          <option>بطاقة ائتمان</option>
+          <option>تحويل بنكي</option>
+          <option>قسط</option>
+        </select>
+      </div>
+
+      <!-- Installment Form -->
+      <div *ngIf="showInstallmentForm" class="installment-section">
+        <h4>إعدادات الأقساط</h4>
+        <div class="form-group">
+          <label>عدد الأقساط:</label>
+          <input type="number" [(ngModel)]="installment_count" name="installment_count" min="1" max="12" />
+        </div>
+
+        <div *ngIf="installment_count > 0" class="installments-list">
+          <h5>بيانات الأقساط (التاريخ والمبلغ):</h5>
+          <div *ngFor="let i of [].constructor(installment_count); let idx = index" class="installment-row-input">
+            <div class="installment-input-group">
+              <label>القسط {{ idx + 1 }}:</label>
+              <div class="installment-fields">
+                <div class="field-wrapper">
+                  <label class="field-label">التاريخ:</label>
+                  <input type="date" [(ngModel)]="installment_dates[idx + 1]" [name]="'installment_date_' + (idx + 1)" class="date-input" />
+                </div>
+                <div class="field-wrapper">
+                  <label class="field-label">المبلغ:</label>
+                  <input type="number" [(ngModel)]="installment_amounts[idx + 1]" [name]="'installment_amount_' + (idx + 1)" class="amount-input" min="0" step="0.01" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="installments-total">
+            <span>إجمالي الأقساط:</span>
+            <span class="total-amount">{{ calculateTotalInstallments() }} جنيه</span>
+          </div>
+          <div class="installments-target">
+            <span>المطلوب:</span>
+            <span class="target-amount">{{ total }} جنيه</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-actions">
+        <button (click)="confirmInvoice()" [disabled]="savingInvoice" class="confirm-btn">{{ savingInvoice ? 'جاري الحفظ...' : 'حفظ الفاتورة' }}</button>
+        <button (click)="resetInvoice()" class="reset-btn">إعادة تعيين</button>
+      </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="products-section">
+      <div class="section-header">
+        <h2>المنتجات</h2>
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          placeholder="بحث عن منتج"
+          name="search"
+          class="search-input">
+      </div>
+
+      <div class="product-selector">
+        <label>اختر منتج</label>
+        <select [(ngModel)]="selectedProduct" name="product" (change)="onProductSelect()">
+          <option [ngValue]="null">-- اختر منتج --</option>
+          <option *ngFor="let p of getFilteredProducts()" [ngValue]="p">
+            {{ p.name }} ({{ p.hgn }}) - المتاح: {{ p.stock_quantity }}
+          </option>
+        </select>
+      </div>
+
+      <div class="product-quantity">
+        <label>الكمية</label>
+        <input 
+          type="number" 
+          [(ngModel)]="product_quantity" 
+          min="1"
+          name="quantity">
+        <button (click)="addToInvoice()" class="add-btn">إضافة</button>
+      </div>
+
+      <div class="products-grid">
+        <div *ngFor="let product of getFilteredProducts()" class="product-card">
+          <div class="product-info">
+            <h4>{{ product.name }}</h4>
+            <p class="sku">{{ product.hgn }}</p>
+            <p>
+              المتاح: {{ product.stock_quantity }}
+            </p>
+            <p class="price">سعر البيع: {{ product.sale_price }} جنيه</p>
+            <p class="min-stock">الحد الأدنى: {{ product.min_stock !== undefined ? product.min_stock : 0 }}</p>
+            <p class="wholesale">سعر الجملة: {{ product.wholesale_price }} جنيه</p>
+          </div>
+          <button (click)="quickAdd(product)" class="quick-add-btn">
+            اختيار
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Returns Section -->
+  <div class="returns-section" style="margin:20px 0;">
+    <h2>مرتجع</h2>
+    <div class="form-group">
+      <label>البحث (رقم الفاتورة، رقم الموبايل، أو اسم العميل)</label>
+      <input type="text" [(ngModel)]="returnSearchQuery" name="returnSearch" placeholder="ادخل رقم الفاتورة أو رقم الموبايل أو اسم العميل">
+      <button (click)="matchedInvoices = findInvoicesByQuery(returnSearchQuery)" class="add-btn" style="margin-top:8px;">ابحث</button>
+      <div style="margin-top:6px; color:#666; font-size:13px;">يمكن البحث بالرقم، رقم الموبايل، أو اسم العميل لإيجاد الفاتورة المطلوبة للمرتجع.</div>
+    </div>
+
+    <div *ngIf="matchedInvoices && matchedInvoices.length > 0" class="matched-list">
+      <h4>النتائج:</h4>
+      <table class="invoices-table" style="width:100%; margin-top:8px;">
+        <thead>
+          <tr>
+            <th>رقم الفاتورة</th>
+            <th>رقم الموبايل</th>
+            <th>اسم العميل</th>
+            <th>التاريخ</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let mi of matchedInvoices">
+            <td>#{{ mi.invoice_number }}</td>
+            <td>{{ mi.customer_phone || '-' }}</td>
+            <td>{{ mi.customer_name }}</td>
+            <td>{{ mi.date_time_display || mi.date_time }}</td>
+            <td><button (click)="selectInvoiceForReturn(mi)" class="details-btn">اختر للمرتجع</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="selectedReturnInvoice" class="selected-return" style="margin-top:12px;">
+      <h4>فاتورة مختارة: #{{ selectedReturnInvoice.invoice_number }} - {{ selectedReturnInvoice.customer_name }}</h4>
+        <div style="margin-bottom:8px; font-weight:700;">مبلغ المرتجع الحالي: {{ _currentReturnPreview }} جنيه</div>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <button (click)="setFullReturn()" class="add-btn">ارجاع الفاتورة كاملة</button>
+        </div>
+      <table class="items-table">
+        <tr>
+          <th>المنتج</th>
+          <th>الكمية في الفاتورة</th>
+          <th>كمية المرتجع</th>
+        </tr>
+        <tr *ngFor="let it of selectedReturnInvoice.items; let idx = index">
+          <td>{{ it.product.name }}</td>
+          <td>{{ it.quantity }}</td>
+            <td>
+              <input type="number" [(ngModel)]="returnQuantities[idx]" (ngModelChange)="updateReturnPreview()" min="0" [max]="it.quantity" name="ret_{{idx}}">
+            </td>
+        </tr>
+      </table>
+        <div style="margin-top:8px; font-weight:700;">المبلغ المتوقع للاسترداد: {{ _currentReturnPreview }} جنيه</div>
+      <div class="form-group">
+        <label>سبب المرتجع (اختياري)</label>
+        <input type="text" [(ngModel)]="returnReason" name="returnReason" placeholder="سبب المرتجع">
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button (click)="processReturn()" class="confirm-btn">معالجة المرتجع</button>
+        <button (click)="selectedReturnInvoice = null" class="reset-btn">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices History -->
+  <div class="invoices-history">
+    <h2>سجل الفاتورات</h2>
+    <div *ngIf="invoices.length === 0" class="empty-message">
+      لا توجد فاتورات حالياً
+    </div>
+    <table *ngIf="invoices.length > 0" class="invoices-table">
+      <tr>
+        <th>رقم الفاتورة</th>
+        <th>التاريخ</th>
+        <th>العميل</th>
+        <th>الإجمالي</th>
+        <th>طريقة الدفع</th>
+        <th></th>
+      </tr>
+          <tr *ngFor="let inv of invoices">
+        <td>{{ inv.invoice_number }}</td>
+        <td>{{ inv.date_time_display || inv.date_time }}</td>
+        <td>{{ inv.customer_name }}</td>
+        <td>{{ inv.total }}</td>
+        <td>{{ inv.payment_method }}</td>
+        <td>
+          <button (click)="viewInvoiceDetails(inv)" class="details-btn">تفاصيل</button>
+          <button (click)="printInvoice(inv)" class="print-btn">طباعة</button>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- Invoice Details Modal -->
+<div *ngIf="selectedInvoiceDetail" class="modal-overlay" (click)="closeInvoiceDetails()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>تفاصيل الفاتورة #{{ selectedInvoiceDetail.invoice_number }}</h2>
+      <button (click)="closeInvoiceDetails()" class="close-btn">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Customer Info -->
+      <div class="invoice-section">
+        <h4>بيانات العميل</h4>
+        <div class="info-row">
+          <span class="label">الاسم:</span>
+          <span class="value">{{ selectedInvoiceDetail.customer_name }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">التاريخ:</span>
+          <span class="value">{{ selectedInvoiceDetail.date_time }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">الكاشير:</span>
+          <span class="value">{{ selectedInvoiceDetail.cashier_name }}</span>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div class="invoice-section">
+        <h4>المنتجات</h4>
+        <table class="items-details-table">
+          <tr>
+            <th>المنتج</th>
+            <th>الكمية</th>
+            <th>السعر</th>
+            <th>الإجمالي</th>
+          </tr>
+          <tr *ngFor="let item of selectedInvoiceDetail.items">
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price }} جنيه</td>
+            <td>{{ item.line_total }} جنيه</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Totals -->
+      <div class="invoice-section">
+        <h4>الملخص المالي</h4>
+        <div class="info-row">
+          <span class="label">الإجمالي الجزئي:</span>
+          <span class="value">{{ selectedInvoiceDetail.subtotal }} جنيه</span>
+        </div>
+        <div *ngIf="selectedInvoiceDetail.discount_percent > 0" class="info-row">
+          <span class="label">خصم ({{ selectedInvoiceDetail.discount_percent }}%):</span>
+          <span class="value discount">-{{ selectedInvoiceDetail.discount_amount }} جنيه</span>
+        </div>
+        <div class="info-row total">
+          <span class="label">الإجمالي:</span>
+          <span class="value">{{ selectedInvoiceDetail.total }} جنيه</span>
+        </div>
+        <div class="info-row">
+          <span class="label">طريقة الدفع:</span>
+          <span class="value">{{ selectedInvoiceDetail.payment_method }}</span>
+        </div>
+      </div>
+
+      <!-- Installments -->
+      <div *ngIf="selectedInvoiceDetail.payment_method === 'قسط' && selectedInvoiceDetail.installments" class="invoice-section">
+        <h4>الأقساط</h4>
+        <div class="installments-table">
+          <div *ngFor="let inst of selectedInvoiceDetail.installments" class="installment-row">
+            <span class="installment-number">القسط {{ inst.installment_number }}</span>
+            <span class="installment-amount">{{ inst.amount }} جنيه</span>
+            <span class="installment-date">الاستحقاق: {{ inst.due_date }}</span>
+            <span class="installment-status" [class.paid]="inst.paid">{{ inst.paid ? 'مدفوع' : 'قيد الانتظار' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button (click)="printInvoice(selectedInvoiceDetail)" class="print-btn">طباعة</button>
+      <button (click)="closeInvoiceDetails()" class="close-modal-btn">إغلاق</button>
+    </div>
+  </div>
+</div>
