@@ -1,4 +1,4 @@
-$link = 'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\Cash App.lnk'
+$link = 'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\ERP.lnk'
 Write-Output "Link: $link"
 Write-Output "Exists: $(Test-Path $link)"
 if (Test-Path $link) {

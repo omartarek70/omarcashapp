@@ -1,7 +1,7 @@
-# Creates a shortcut in the current user's Startup folder pointing to the packaged Cash App
+# Creates a shortcut in the current user's Startup folder pointing to the packaged ERP
 param(
-  [string]$TargetPath = "$PWD\dist_electron_packager\Cash App-win32-x64\Cash App.exe",
-  [string]$LinkName = 'Cash App.lnk'
+  [string]$TargetPath = "$PWD\dist_electron_packager\ERP-win32-x64\ERP.exe",
+  [string]$LinkName = 'ERP.lnk'
 )
 
 Write-Host "Creating startup shortcut..."

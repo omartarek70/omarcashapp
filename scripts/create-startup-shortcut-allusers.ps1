@@ -1,8 +1,8 @@
 # Creates a shortcut in the All Users (ProgramData) Startup folder.
 # Requires administrative privileges to write under C:\ProgramData.
 param(
-  [string]$TargetPath = "$PWD\dist_electron_packager\Cash App-win32-x64\Cash App.exe",
-  [string]$LinkName = 'Cash App.lnk'
+  [string]$TargetPath = "$PWD\dist_electron_packager\ERP-win32-x64\ERP.exe",
+  [string]$LinkName = 'ERP.lnk'
 )
 
 Write-Host "Creating All-Users startup shortcut..."

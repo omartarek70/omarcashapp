@@ -18,8 +18,8 @@ function createWindow() {
   // load the dist folder of your Angular app
   // Try common output locations and load the file directly to avoid URL encoding issues
   const candidates = [
-    path.join(__dirname, 'dist', 'cash-app', 'browser', 'index.html'),
-    path.join(__dirname, 'dist', 'cash-app', 'index.html'),
+    path.join(__dirname, 'dist', 'erp', 'browser', 'index.html'),
+    path.join(__dirname, 'dist', 'erp', 'index.html'),
     path.join(__dirname, 'dist', 'index.html')
   ];
 
@@ -34,7 +34,7 @@ function createWindow() {
     win.loadFile(targetFile).catch(err => console.error('loadFile failed', err));
   } else {
     // fallback to previous behavior
-    const fallback = path.join(__dirname, 'dist', 'cash-app', 'index.html');
+    const fallback = path.join(__dirname, 'dist', 'erp', 'index.html');
     win.loadURL(url.format({ pathname: fallback, protocol: 'file:', slashes: true }));
   }
 
@@ -46,7 +46,7 @@ function createWindow() {
   // Forward renderer console messages to a log file for offline inspection
   try {
     const fs = require('fs');
-    const logDir = path.join(__dirname, 'dist', 'cash-app');
+    const logDir = path.join(__dirname, 'dist', 'erp');
     const logPath = path.join(logDir, 'renderer-errors.log');
     win.webContents.on('console-message', (event, level, message, line, sourceId) => {
       try {

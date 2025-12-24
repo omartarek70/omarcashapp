@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "cash-app": {
+    "erp": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "cash-app:build:production"
+              "buildTarget": "erp:build:production"
             },
             "development": {
-              "buildTarget": "cash-app:build:development"
+              "buildTarget": "erp:build:development"
             }
           },
           "defaultConfiguration": "development"

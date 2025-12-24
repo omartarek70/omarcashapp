@@ -1,12 +1,12 @@
-!define APP_NAME "Cash App"
-!define APP_EXE "Cash App.exe"
+!define APP_NAME "ERP"
+!define APP_EXE "ERP.exe"
 !define INSTALL_DIR "$PROGRAMFILES64\${APP_NAME}"
 
 ; Request application privileges for Windows
 RequestExecutionLevel admin
 
 SetCompressor lzma
-OutFile "dist_electron_packager\CashApp-Setup.exe"
+OutFile "dist_electron_packager\ERP-Setup.exe"
 InstallDir ${INSTALL_DIR}
 
 Page directory
@@ -15,7 +15,7 @@ Page instfiles
 Section "Install"
   SetOutPath "$INSTDIR"
   ; Copy all files from packaged app folder
-  File /r "dist_electron_packager\Cash App-win32-x64\*"
+  File /r "dist_electron_packager\ERP-win32-x64\*"
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"

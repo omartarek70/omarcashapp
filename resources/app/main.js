@@ -16,7 +16,7 @@ function createWindow() {
   // load the dist folder of your Angular app
   win.loadURL(
     url.format({
-      pathname: path.join(__dirname, `/dist/cash-app/index.html`),
+      pathname: path.join(__dirname, `/dist/erp/index.html`),
       protocol: 'file:',
       slashes: true
     })

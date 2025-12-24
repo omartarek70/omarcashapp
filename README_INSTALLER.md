@@ -22,11 +22,11 @@
    cd "<مسار المشروع>"
    build-installer.bat
 
-- الناتج: `dist_electron_packager\CashApp-Setup.exe`.
+   - الناتج: `dist_electron_packager\ERP-Setup.exe`.
 
 
 الخيار C — إذا لم تريد تثبيت:
-- استخدم الملف المحمول ZIP الموجود: `dist_electron_packager\CashApp-portable.zip` — فكّ الضغط وشغّل `Cash App.exe`.
+- استخدم الملف المحمول ZIP الموجود: `dist_electron_packager\ERP-portable.zip` — فكّ الضغط وشغّل `ERP.exe`.
 
 إذا تريد، أستطيع:
 - أرفع الـ ZIP لمكان تنزيل (احتاج إذن أو إعداد رفع)، أو

@@ -1,5 +1,5 @@
 try {
-  $exe = 'D:\omar\Omar tarek AUC\omar tarekqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq - Copy\cash-app\dist_electron_packager\Cash App-win32-x64\Cash App.exe'
+  $exe = 'D:\omar\Omar tarek AUC\omar tarekqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq - Copy\cash-app\dist_electron_packager\ERP-win32-x64\ERP.exe'
   if (-not (Test-Path $exe)) {
     Write-Error "Target executable not found: $exe"
     exit 1
@@ -7,7 +7,7 @@ try {
 
   $action = New-ScheduledTaskAction -Execute $exe
   $trigger = New-ScheduledTaskTrigger -AtLogOn
-  $taskName = 'CashApp AutoStart (User)'
+  $taskName = 'ERP AutoStart (User)'
 
   # Register for the current user (no -User parameter)
   Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Force
