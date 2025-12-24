@@ -1,654 +1,0 @@
-<div class="admin-container">
-  <!-- Top Bar -->
-  <div class="top-bar">
-    <div class="title">لوحة التحكم - {{ currentUser?.name }}</div>
-    <button (click)="logout()" class="logout-btn">خروج</button>
-  </div>
-
-  <div class="admin-layout">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <nav class="nav-menu">
-        <button 
-          (click)="navigateTo('dashboard')"
-          [class.active]="currentPage === 'dashboard'"
-          class="nav-item">
-          📊 لوحة التحكم
-        </button>
-        <button 
-          (click)="navigateTo('invoices')"
-          [class.active]="currentPage === 'invoices'"
-          class="nav-item">
-          🧾 الفاتورات
-        </button>
-        <button 
-          (click)="navigateTo('products')"
-          [class.active]="currentPage === 'products'"
-          class="nav-item">
-          📦 المنتجات
-        </button>
-        <button 
-          (click)="navigateTo('reports')"
-          [class.active]="currentPage === 'reports'"
-          class="nav-item">
-          📈 التقارير
-        </button>
-        <button 
-          (click)="navigateTo('alerts')"
-          [class.active]="currentPage === 'alerts'"
-          class="nav-item alerts-nav">
-          🔔 التنبيهات
-          <span *ngIf="upcomingInstallments.length + lowStockProducts.length > 0" class="alert-badge">{{ upcomingInstallments.length + lowStockProducts.length }}</span>
-        </button>
-        <button 
-          (click)="navigateTo('clients')"
-          [class.active]="currentPage === 'clients'"
-          class="nav-item">
-          👥 العملاء
-        </button>
-        <button 
-          (click)="navigateTo('returns')"
-          [class.active]="currentPage === 'returns'"
-          class="nav-item">
-          🔁 المرتجعات
-        </button>
-      </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Dashboard Page -->
-      <div *ngIf="currentPage === 'dashboard'" class="page">
-        <h1>لوحة التحكم</h1>
-        
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">💰</div>
-            <div class="stat-info">
-              <div class="stat-label">مبيعات اليوم</div>
-              <div class="stat-value">{{ todaySales }} جنيه</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon">📋</div>
-            <div class="stat-info">
-              <div class="stat-label">عدد الفاتورات</div>
-              <div class="stat-value">{{ todayInvoices }}</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon">⚠️</div>
-            <div class="stat-info">
-              <div class="stat-label">منتجات ناقصة المخزون</div>
-              <div class="stat-value">{{ lowStockCount }}</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Daily Report -->
-        <div class="daily-report" style="margin-top:24px;">
-          <h2>📊 تقرير اليوم</h2>
-          
-          <!-- Daily Summary Stats -->
-          <div class="daily-stats-grid">
-            <div class="daily-stat">
-              <div class="stat-number">{{ getDailyReport().invoices.length }}</div>
-              <div class="stat-label">الفواتير</div>
-            </div>
-            <div class="daily-stat highlight-green">
-              <div class="stat-number">{{ getDailyReport().totalSales }}</div>
-              <div class="stat-label">جنيه مبيعات</div>
-            </div>
-            <div class="daily-stat highlight-red">
-              <div class="stat-number">{{ getDailyReport().totalRefunds }}</div>
-              <div class="stat-label">جنيه مرتجعات</div>
-            </div>
-            <div class="daily-stat">
-              <div class="stat-number">{{ getDailyReport().totalSales - getDailyReport().totalRefunds }}</div>
-              <div class="stat-label">جنيه صافي</div>
-            </div>
-          </div>
-
-          <!-- Invoices Table -->
-          <div *ngIf="getDailyReport().invoices.length === 0" class="empty-message">
-            ✨ لا توجد معاملات اليوم
-          </div>
-
-          <!-- Start New Day button -->
-          <div style="margin-top:12px;">
-            <button (click)="confirmStartNewDay()" class="action-btn">🔁 بدء يوم جديد (أرشفة اليوم وصفر اليومية)</button>
-          </div>
-          
-          <div *ngIf="getDailyReport().invoices.length > 0" class="invoices-table-wrapper">
-            <table class="daily-invoices-table">
-              <thead>
-                <tr>
-                  <th>رقم الفاتورة</th>
-                  <th>العميل</th>
-                  <th>الوقت</th>
-                  <th>عدد المنتجات</th>
-                  <th>الإجمالي الجزئي</th>
-                  <th>الخصم</th>
-                  <th>الإجمالي</th>
-                  <th>الدفع</th>
-                  </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let inv of getDailyReport().invoices" class="invoice-row">
-                  <td class="invoice-number">#{{ inv.invoice_number }}</td>
-                  <td class="customer-name">{{ inv.customer_name }}{{ inv.customer_phone ? ' - ' + inv.customer_phone : '' }}</td>
-                  <td class="time">{{ inv['date_time_display'] || inv.date_time }}</td>
-                  <td class="quantity">{{ inv.items.length }}</td>
-                  <td class="subtotal">{{ inv.subtotal }} جنيه</td>
-                  <td class="discount" [class.no-discount]="inv.discount_percent === 0">
-                    <span *ngIf="inv.discount_percent > 0" class="discount-badge">{{ inv.discount_percent }}% (-{{ inv.discount_amount }})</span>
-                    <span *ngIf="inv.discount_percent === 0" class="no-discount-text">-</span>
-                  </td>
-                  <td class="total-amount">{{ inv.total }} جنيه</td>
-                  <td class="payment-method" [class.installment]="inv.payment_method === 'قسط'">
-                    <span class="method-badge">{{ inv.payment_method }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Expandable Invoice Details -->
-          <div *ngIf="getDailyReport().invoices.length > 0" class="invoices-details-section">
-            <h3>📋 تفاصيل الفواتير</h3>
-            <div *ngFor="let inv of getDailyReport().invoices; let i = index" class="invoice-detail-card">
-              <div class="detail-header" (click)="toggleInvoiceDetail(i)">
-                <div class="header-left">
-                  <span class="invoice-num">فاتورة #{{ inv.invoice_number }}</span>
-                  <span class="customer-info">{{ inv.customer_name }}{{ inv.customer_phone ? ' - ' + inv.customer_phone : '' }} - {{ inv['date_time_display'] || inv.date_time }}</span>
-                </div>
-                <div class="header-right">
-                  <span class="detail-total">{{ inv.total }} جنيه</span>
-                  <span class="toggle-icon" [class.open]="expandedInvoices[i]">▼</span>
-                </div>
-              </div>
-              
-              <div *ngIf="expandedInvoices[i]" class="detail-content">
-                <table class="items-details-table">
-                  <tr>
-                    <th>المنتج</th>
-                    <th>الكمية</th>
-                    <th>السعر</th>
-                    <th>الإجمالي</th>
-                  </tr>
-                  <tr *ngFor="let item of inv.items">
-                    <td>{{ item.product.name }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unit_price }} جنيه</td>
-                    <td>{{ item.line_total }} جنيه</td>
-                  </tr>
-                </table>
-                
-                <div class="invoice-summary">
-                  <div class="summary-line">
-                    <span>الإجمالي الجزئي:</span>
-                    <span class="amount">{{ inv.subtotal }} جنيه</span>
-                  </div>
-                  <div *ngIf="inv.discount_percent > 0" class="summary-line discount-line">
-                    <span>خصم ({{ inv.discount_percent }}%):</span>
-                    <span class="amount">-{{ inv.discount_amount }} جنيه</span>
-                  </div>
-                  <div class="summary-line total-line">
-                    <span>الإجمالي النهائي:</span>
-                    <span class="amount">{{ inv.total }} جنيه</span>
-                  </div>
-                  <div class="summary-line">
-                    <span>طريقة الدفع:</span>
-                    <span class="amount method">{{ inv.payment_method }}</span>
-                  </div>
-                  
-                  <!-- Installments if applicable -->
-                  <div *ngIf="inv.payment_method === 'قسط' && inv.installments" class="installments-details">
-                    <div class="installments-title">الأقساط:</div>
-                    <div *ngFor="let inst of inv.installments" class="installment-detail-line">
-                      <span>القسط {{ inst.installment_number }}:</span>
-                      <span class="inst-amount">{{ inst.amount }} جنيه</span>
-                      <span class="inst-date">استحقاق: {{ inst.due_date }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Daily Totals Summary -->
-          <div *ngIf="getDailyReport().invoices.length > 0" class="daily-totals-summary">
-            <div class="summary-title">📈 ملخص اليوم الشامل</div>
-            <div class="summary-grid">
-              <div class="summary-item green">
-                <span class="label">إجمالي المبيعات:</span>
-                <span class="value">{{ getDailyReport().totalSales }} جنيه</span>
-              </div>
-              <div class="summary-item red">
-                <span class="label">إجمالي المرتجعات:</span>
-                <span class="value">{{ getDailyReport().totalRefunds }} جنيه</span>
-              </div>
-              <div class="summary-item blue">
-                <span class="label">الصافي:</span>
-                <span class="value">{{ getDailyReport().totalSales - getDailyReport().totalRefunds }} جنيه</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Monthly report removed from dashboard. Use 'التقارير' page for per-day monthly breakdown. -->
-
-        <div class="dashboard-section">
-          <h2>المنتجات ناقصة المخزون</h2>
-          <div *ngIf="getLowStockProducts().length === 0" class="empty-message">
-            جميع المنتجات متوفرة
-          </div>
-          <table *ngIf="getLowStockProducts().length > 0" class="products-table">
-            <tr>
-              <th>اسم المنتج</th>
-                <th>HGN</th>
-                <th>المتاح</th>
-                <th>الحد الأدنى</th>
-            </tr>
-            <tr *ngFor="let product of getLowStockProducts()" class="low-stock-row">
-              <td>{{ product.name }}</td>
-                <td>{{ product.hgn }}</td>
-                <td class="stock-qty">{{ product.stock_quantity }}</td>
-                <td>-</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Invoices Page -->
-      <div *ngIf="currentPage === 'invoices'" class="page">
-        <h1>سجل الفاتورات</h1>
-        
-        <div class="page-actions">
-          <button (click)="exportToCSV()" class="action-btn export-btn">📥 تصدير CSV</button>
-          <button (click)="printReport()" class="action-btn print-btn">🖨️ طباعة</button>
-        </div>
-
-        <div *ngIf="invoices.length === 0" class="empty-message">
-          لا توجد فاتورات حالياً
-        </div>
-
-        <table *ngIf="invoices.length > 0" class="invoices-table">
-          <tr>
-            <th>رقم الفاتورة</th>
-            <th>التاريخ</th>
-            <th>العميل</th>
-            <th>الكاشير</th>
-            <th>الإجمالي</th>
-            <th>طريقة الدفع</th>
-          </tr>
-          <tr *ngFor="let invoice of invoices">
-            <td>{{ invoice.invoice_number }}</td>
-            <td>{{ invoice.date_time }}</td>
-            <td>{{ invoice.customer_name }}</td>
-            <td>{{ invoice.cashier_name }}</td>
-            <td>{{ invoice.total }}</td>
-            <td>{{ invoice.payment_method }}</td>
-          </tr>
-        </table>
-        <div *ngIf="showEditProductForm" class="form-container" style="margin-top:12px; background:#fff; padding:12px;">
-          <h3>تعديل المنتج</h3>
-          <div class="form-group">
-            <label>الاسم</label>
-            <input [(ngModel)]="editingProduct!.name" name="edit_name" placeholder="اسم المنتج">
-          </div>
-          <div class="form-group">
-            <label>كود المنتج </label>
-            <input [(ngModel)]="editingProduct!.hgn" name="edit_hgn" placeholder="HGN">
-          </div>
-          <div class="form-group">
-            <label>سعر المصنع</label>
-            <input type="number" [(ngModel)]="editingProduct!.cost_price" name="edit_cost" placeholder="سعر المصنع">
-          </div>
-          <div class="form-group">
-            <label>سعر الجملة</label>
-            <input type="number" [(ngModel)]="editingProduct!.wholesale_price" name="edit_wholesale" placeholder="سعر الجملة">
-          </div>
-          <div class="form-group">
-            <label>الحد الأدنى للبيع</label>
-            <input type="number" [(ngModel)]="editingProduct!.min_stock" name="edit_min_stock" placeholder="الحد الأدنى للبيع">
-          </div>
-          <div class="form-group">
-            <label>سعر البيع</label>
-            <input type="number" [(ngModel)]="editingProduct!.sale_price" name="edit_sale" placeholder="سعر البيع">
-          </div>
-          <div class="form-group">
-            <label>الكمية</label>
-            <input type="number" [(ngModel)]="editingProduct!.stock_quantity" name="edit_stock" placeholder="الكمية">
-          </div>
-          <div style="display:flex; gap:8px; margin-top:8px;">
-            <button (click)="saveEditedProduct()" class="save-btn">💾 حفظ التعديلات</button>
-            <button (click)="cancelEdit()" class="reset-btn">إلغاء</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Returns Page -->
-      <div *ngIf="currentPage === 'returns'" class="page">
-        <h1>سجل المرتجعات</h1>
-
-        <div class="form-group">
-          <label>بحث في المرتجعات (رقم الفاتورة أو اسم العميل)</label>
-          <input [(ngModel)]="returnsSearchQuery" name="returnsSearch" placeholder="بحث...">
-        </div>
-
-        <div *ngIf="returns && returns.length === 0" class="empty-message">لا توجد مرتجعات مسجلة</div>
-        <div *ngIf="returns && returns.length > 0">
-          <table class="invoices-table">
-            <tr>
-              <th>رقم الفاتورة</th>
-              <th>تاريخ المرتجع</th>
-              <th>المعالج</th>
-              <th>المبلغ المسترد</th>
-            </tr>
-            <tr *ngFor="let r of returns">
-              <td>{{ r.invoice_number }}</td>
-              <td>{{ r.date_time }}</td>
-              <td>{{ r.processed_by }}</td>
-              <td>{{ r.refund_amount }}</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Clients Page -->
-      <div *ngIf="currentPage === 'clients'" class="page">
-        <h1>قائمة العملاء</h1>
-
-        <div class="form-group" style="margin-bottom:12px;">
-          <h3>إضافة عميل يدوي</h3>
-          <label>الاسم</label>
-          <input [(ngModel)]="newClientName" name="newClientName" placeholder="اسم العميل">
-          <label>رقم الهاتف</label>
-          <input [(ngModel)]="newClientPhone" name="newClientPhone" placeholder="رقم الهاتف">
-          <label>البريد الإلكتروني (اختياري)</label>
-          <input [(ngModel)]="newClientEmail" name="newClientEmail" placeholder="البريد الإلكتروني">
-          <button (click)="addCustomer(newClientName, newClientPhone)" class="add-btn">➕ إضافة</button>
-        </div>
-
-        <div *ngIf="customers.length === 0" class="empty-message">لا توجد عملاء مسجلين</div>
-        <table *ngIf="customers.length > 0" class="invoices-table">
-          <tr>
-            <th>الاسم</th>
-            <th>الهاتف</th>
-            <th>البريد الإلكتروني</th>
-            <th>النقاط</th>
-            <th>آخر شراء</th>
-            <th></th>
-          </tr>
-          <tr *ngFor="let c of customers">
-            <td>{{ c.name }}</td>
-            <td>{{ c.phone }}</td>
-            <td>{{ c.email || '-' }}</td>
-            <td>{{ c.points || 0 }}</td>
-            <td>{{ c.last_purchase_at || c.created_at || '-' }}</td>
-            <td>
-              <button (click)="monthlySearchQuery = c.name; navigateTo('invoices')" class="details-btn">عرض الفواتير</button>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Products Page -->
-      <div *ngIf="currentPage === 'products'" class="page">
-        <h1>إدارة المنتجات</h1>
-
-        <button 
-          (click)="toggleAddForm()"
-          class="action-btn add-btn">
-          {{ showAddProductForm ? '✖️ إلغاء' : '➕ إضافة منتج' }}
-        </button>
-
-          <div *ngIf="showAddProductForm" class="form-container">
-          <h3>منتج جديد</h3>
-          <div class="form-group">
-            <label>الاسم</label>
-            <input [(ngModel)]="newProduct.name" name="name" placeholder="اسم المنتج">
-          </div>
-          <div class="form-group">
-            <label>كود المنتج</label>
-            <input [(ngModel)]="newProduct.hgn" name="hgn" placeholder=" كود المنتج">
-          </div>
-          <div class="form-group">
-            <label>سعر المصنع </label>
-            <input type="number" [(ngModel)]="newProduct.cost_price" name="cost_price" placeholder="سعر المصنع">
-          </div>
-          <div class="form-group">
-            <label>سعر الجمله </label>
-            <input type="number" [(ngModel)]="newProduct.wholesale_price" name="wholesale_price" placeholder="سعر الجمله">
-          </div>
-          <div class="form-group">
-            <label>الحد الأدنى للبيع</label>
-            <input type="number" [(ngModel)]="newProduct.min_stock" name="min_stock" placeholder="الحد الأدنى للمخزون">
-          </div>
-          <!-- ضريبة أُزيلت -->
-          <div class="form-group">
-            <label>الكمية</label>
-              <input type="number" [(ngModel)]="newProduct.stock_quantity" name="stock" placeholder="الكمية">
-          </div>
-          <div class="form-group">
-            <label>سعر البيع </label>
-              <input type="number" [(ngModel)]="newProduct.sale_price" name="sale_price" placeholder="سعر البيع">
-          </div>
-          <button (click)="addProduct()" class="save-btn">💾 {{ editingProductId ? 'حفظ التعديلات' : 'حفظ' }}</button>
-        </div>
-
-        <table class="products-table">
-          <tr>
-            <th>الاسم</th>
-            <th>SKU</th>
-            <th>سعر المصنع</th>
-            <th>سعر الجمله</th>
-            <th>المتاح</th>
-            <th>الحد الأدنى</th>
-            <th>سعر البيع</th>
-            <th></th>
-          </tr>
-          <tr *ngFor="let product of products">
-            <td>{{ product.name }}</td>
-            <td>{{ product.hgn }}</td>
-            <td>{{ product.cost_price }}</td>
-            <td>{{ product.wholesale_price }}</td>
-            <td>{{ product.stock_quantity }}</td>
-            <td>{{ product.min_stock || '-' }}</td>
-            <td>{{ product.sale_price }}</td>
-            <td>
-              <button (click)="updateProduct(product)" class="edit-btn">✏️ تعديل</button>
-              <button (click)="deleteProduct(product.id)" class="delete-btn">🗑️</button>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Reports Page -->
-      <div *ngIf="currentPage === 'reports'" class="page">
-        <h1>التقارير</h1>
-        
-        <div class="report-actions">
-          <button (click)="exportToCSV()" class="action-btn export-btn">📊 تقرير شامل</button>
-          <button (click)="printReport()" class="action-btn print-btn">🖨️ طباعة التقرير</button>
-          <button (click)="monthlyInvoicesOpen = !monthlyInvoicesOpen" class="action-btn export-btn">📁 فواتير الشهر</button>
-        </div>
-
-        <div class="report-summary">
-          <h2>ملخص المبيعات</h2>
-          <div class="summary-grid">
-            <div class="summary-item">
-              <span class="summary-label">إجمالي المبيعات:</span>
-              <span class="summary-value">{{ getTotalSales() }} جنيه</span>
-            </div>
-            <div class="summary-item">
-              <span class="summary-label">عدد الفاتورات:</span>
-              <span class="summary-value">{{ invoices.length }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="summary-label">متوسط الفاتورة:</span>
-              <span class="summary-value">{{ getAverageInvoice().toFixed(2) }} جنيه</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Monthly breakdown: show sales per day for chosen month -->
-        <div class="monthly-breakdown" style="margin-top:20px; background:#fff; padding:12px; border-radius:8px;">
-          <h3>تفصيل شهري — مبيعات كل يوم</h3>
-          <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-bottom:8px;">
-            <label>السنة</label>
-            <input type="number" [(ngModel)]="reportYear" name="reportYear" style="width:110px; margin-left:6px;" />
-            <label>الشهر</label>
-            <select [(ngModel)]="reportMonth" name="reportMonth" style="width:100px; margin-left:6px;">
-              <option *ngFor="let m of [0,1,2,3,4,5,6,7,8,9,10,11]" [ngValue]="m">{{ m + 1 }}</option>
-            </select>
-          </div>
-          <div *ngIf="getMonthlyBreakdown().dailyReports.length === 0" class="empty-message">لا توجد معاملات في هذا الشهر</div>
-          <div *ngFor="let d of getMonthlyBreakdown().dailyReports" style="margin-bottom:8px; padding:8px; background:#fff; border-left:4px solid #667eea;">
-            <div style="display:flex; justify-content:space-between; direction:rtl;">
-              <div>{{ d.date }}</div>
-              <div>مبيعات: {{ d.totalSales }} جنيه — مرتجعات: {{ d.totalRefunds }} جنيه — فواتير: {{ d.invoices.length }}</div>
-            </div>
-          </div>
-          <div style="margin-top:10px; font-weight:700;">إجمالي المبيعات للشهر: {{ getMonthlyBreakdown().totalSales }} جنيه</div>
-          <div style="margin-top:6px; font-weight:700; color:#ff5252;">إجمالي المرتجعات للشهر: {{ getMonthlyBreakdown().totalRefunds }} جنيه</div>
-        </div>
-
-        <div *ngIf="monthlyInvoicesOpen" style="margin-top:20px; background:#fff; padding:12px; border-radius:8px;">
-          <h3>فواتير هذا الشهر</h3>
-          <div class="form-group">
-            <input placeholder="بحث برقم الفاتورة أو اسم العميل" [(ngModel)]="monthlySearchQuery" name="monthlySearch">
-          </div>
-          <div *ngIf="getFilteredMonthlyInvoices().length === 0" class="empty-message">لا توجد فواتير لهذا الشهر</div>
-          <div *ngFor="let inv of getFilteredMonthlyInvoices()" style="border-bottom:1px solid #eee; padding:8px 0; direction:rtl;">
-            <div style="display:flex; justify-content:space-between;">
-              <div>فاتورة #{{ inv.invoice_number }} - {{ inv.customer_name }}</div>
-              <div>{{ inv['date_time_display'] || inv.date_time }} — {{ inv.total }} جنيه</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Archived Days (Daily Archives) -->
-        <div style="margin-top:20px; background:#fff; padding:12px; border-radius:8px;">
-          <h3>أرشيف الأيام</h3>
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-            <label>تصفية باليوم</label>
-            <input type="date" [(ngModel)]="archivedFilterDate" name="archivedFilterDate" />
-            <button (click)="loadArchivedDays()" class="action-btn">تحديث الأرشيف</button>
-            <button (click)="archivedFilterDate='';" class="reset-btn">إلغاء الفلتر</button>
-          </div>
-          <div *ngIf="getFilteredArchivedDays().length === 0" class="empty-message">لا توجد أيام مؤرشفة</div>
-          <div *ngFor="let d of getFilteredArchivedDays()" style="margin-bottom:8px; padding:8px; border-left:4px solid #4caf50; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:700">{{ d.date }}</div>
-              <div style="color:#666; font-size:13px;">مبيعات: {{ d.totalSales }} — مرتجعات: {{ d.totalRefunds }} — عدد الفواتير: {{ (d.invoices || []).length }}</div>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button (click)="viewArchivedDay(d)" class="action-btn">عرض التفاصيل</button>
-              <button (click)="restoreArchivedDay(d)" class="add-btn">استعادة اليوم</button>
-            </div>
-          </div>
-
-          <div *ngIf="selectedArchivedDay" style="margin-top:12px; background:#fff; padding:12px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-            <h4>تفاصيل ليوم: {{ selectedArchivedDay.date }}</h4>
-            <div style="margin-bottom:8px;">إجمالي المبيعات: {{ selectedArchivedDay.totalSales }} — إجمالي المرتجعات: {{ selectedArchivedDay.totalRefunds }}</div>
-            <div *ngIf="selectedArchivedDay.perCashier && selectedArchivedDay.perCashier.length > 0">
-              <h5>تفصيل بالكاشير</h5>
-              <div *ngFor="let c of selectedArchivedDay.perCashier" style="padding:6px 0; border-bottom:1px solid #f1f1f1;">
-                <div style="font-weight:600">{{ c.cashier_name }} — مبيعات: {{ c.totalSales }} — مرتجعات: {{ c.totalRefunds || 0 }}</div>
-                <div style="font-size:13px; color:#444;">فاتورات: {{ c.invoices.length }}</div>
-              </div>
-            </div>
-            <div style="margin-top:10px; display:flex; gap:8px;">
-              <button (click)="restoreArchivedDay(selectedArchivedDay)" class="add-btn">استعادة هذا اليوم</button>
-              <button (click)="clearArchivedSelection()" class="reset-btn">إغلاق التفاصيل</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Alerts Page -->
-      <div *ngIf="currentPage === 'alerts'" class="page">
-        <h1>التنبيهات والتذكيرات</h1>
-
-        <!-- Upcoming Installments Section -->
-        <div class="alerts-section">
-          <div class="section-header">
-            <h2>🔔 الأقساط القريبة من الاستحقاق</h2>
-            <span class="count-badge">{{ upcomingInstallments.length }}</span>
-          </div>
-
-          <div *ngIf="upcomingInstallments.length === 0" class="empty-message">
-            لا توجد أقساط قريبة من الاستحقاق
-          </div>
-
-          <div *ngFor="let alert of upcomingInstallments" class="alert-card installment-alert">
-            <div class="alert-header">
-              <div class="alert-title">
-                <span class="alert-label">فاتورة #{{ alert.invoice_number }}</span>
-                <span class="alert-customer">{{ alert.customer_name }}</span>
-              </div>
-              <div class="alert-days" [class.urgent]="alert.days_remaining <= 2">
-                متبقي: <strong>{{ alert.days_remaining }}</strong> يوم
-              </div>
-            </div>
-            <div class="alert-details">
-              <div class="detail-item">
-                <span class="label">القسط:</span>
-                <span class="value">#{{ alert.installment_number }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">المبلغ:</span>
-                <span class="value amount">{{ alert.amount }} جنيه</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">تاريخ الاستحقاق:</span>
-                <span class="value date">{{ alert.due_date }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Low Stock Products Section -->
-        <div class="alerts-section">
-          <div class="section-header">
-            <h2>📦 المنتجات المنخفضة المخزون</h2>
-            <span class="count-badge">{{ lowStockProducts.length }}</span>
-          </div>
-
-          <div *ngIf="lowStockProducts.length === 0" class="empty-message">
-            جميع المنتجات متوفرة بكميات جيدة
-          </div>
-
-          <div *ngFor="let product of lowStockProducts" class="alert-card stock-alert">
-            <div class="alert-header">
-              <div class="alert-title">
-                <span class="alert-label">{{ product.name }}</span>
-                <span class="alert-sku">{{ product.hgn }}</span>
-              </div>
-              <div class="stock-status" [class.critical]="product.stock_quantity === 0">
-                المتاح: <strong>{{ product.stock_quantity }}</strong>
-              </div>
-            </div>
-            <div class="alert-details">
-              <div class="detail-item">
-                <span class="label">السعر:</span>
-                <span class="value price">{{ product.sale_price }} جنيه</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">الحالة:</span>
-                <span class="value status" [class.critical]="product.stock_quantity === 0">
-                  {{ product.stock_quantity === 0 ? '❌ خارج المخزون' : '⚠️ قريب من الانتهاء' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
